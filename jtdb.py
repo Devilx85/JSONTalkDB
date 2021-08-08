@@ -203,6 +203,68 @@ class JTDBIndex():
         self.index =  sorted(self.index, key=lambda k: k['hash']) 
 
 
+class JTDBObject:
+    
+    def __init__(self,db,row = None):
+        self.__db_link = db
+        self.__data = None
+        self.__new = True
+        if row != None:
+            self.Load(row)
+
+
+    def Load(self,row):
+        self.__data = row
+        self.__dict__.update(self.__data)
+        self.__new = False
+
+    def Refresh(self):
+        self.__dict__.update(self.__data)
+    
+    def isLinked(self):
+        if self.__data == None:
+            return False
+
+        return True
+
+    def GetDict(self):
+        data = {}
+        data.update(vars(self))
+        del data["_JTDBObject__db_link"]
+        del data["_JTDBObject__data"] 
+        del data["_JTDBObject__new"] 
+        xdata = deepcopy(data)
+        return xdata
+
+    def Save(self):
+        if self.isLinked():
+            u_data = self.GetDict()
+            return self.__db_link.ModifyData("U",self.__data,u_data)
+        return False
+
+    def Delete(self):
+        if self.isLinked():
+            if self.__db_link.ModifyData("D",self.__data,None):
+                self.__data = None
+                return True
+
+        return False
+    
+    def MyId(self):
+        if self.isLinked() and self.__new == False:
+            return self.__data["__idx__"]
+            
+
+    def CreateFromDict(self,ddict):
+        if type(ddict) is not dict:
+            raise JTDBWrongRecord
+        if self.__new == True:
+            if self.__db_link.ModifyData("C",None,ddict):
+                self.Load(ddict)
+                return True
+        
+        return False
+
 """Query set class"""
 class JTDBQuerySet:
 
@@ -211,6 +273,13 @@ class JTDBQuerySet:
         self.__db_link = db
         self.luw = False
         self.lock = False
+    
+    def ObjList(self):
+        objs = []
+        for item in self.__data:
+            objs.append(JTDBObject(self.__db_link ,item))
+        
+        return objs
 
     def GetData(self):
         return self.__data
@@ -782,21 +851,22 @@ class JTDB:
         
         elif operation == "C":
             """ CREATE """
-            item = {}
-            item["__idx__"] =  self.GetNextIndex()
-            item["__luw__"] =  luw_id
-            item["__lock__"] =  lock_id
+            #item = {}
+            self.ClearControlInd(u_data)
+            u_data["__idx__"] =  self.GetNextIndex()
+            u_data["__luw__"] =  luw_id
+            u_data["__lock__"] =  lock_id
 
-            item.update(u_data)
+            #item.update(u_data)
 
             if luw_id != False:
-                item["__new__"] = True
+                u_data["__new__"] = True
                 luw_old = next((item for item in self.luws if item["luw"] == luw_id), None)
                 if luw_old != None:
                     #raise JTDBLUWError
-                    luw_old["data"].append(item)
+                    luw_old["data"].append(u_data)
                     trigger_idx_u = False
-
+            item = u_data
             self.lpointer.append(item)
             
         elif operation == "D":

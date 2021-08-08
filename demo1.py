@@ -120,6 +120,27 @@ with jtdb.JTDB() as db:
     db.GetById(16).PrintRecords()
 
 
+    print("\n\n")
+    print("Iterate by object")
+    res = db.Query(jtdb.JTDB_AND( City__EQ = "London"))
+    for item in res.ObjList():
+        print("Name:",item.name)
+        if hasattr(item, "hobby"):
+            print("Hobbies",item.hobby)
+        #Change to different Name
+        item.name = "Salomon"
+        item.Save()
+
+    res = db.Query(jtdb.JTDB_AND( City__EQ = "London")).PrintRecords()
+
+    print("\n\n")
+    print("Adding a new element")
+    """Adding the new element"""
+    person = jtdb.JTDBObject(db)
+    person.CreateFromDict({ "name" : "Helen" , "City" : "Amsterdam" , "age" : 33})
+    print("New person is there with ID",person.MyId())
+    db.Query(jtdb.JTDB_AND( name__EQ = "Helen")).PrintRecords()
+
     """Save to file"""
     #db.SaveDB()
     """Close (in this case not really needed)"""
