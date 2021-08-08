@@ -138,7 +138,12 @@ or just use function:
     res.PrintRecords()
 ```
 
-7. LUWs are used with commits and rollbacks. The idea behind is to save temporary previous state and restore in case of problem
+7. LUWs are used with commits and rollbacks. The idea behind is to save temporary previous state and restore in case of problem. 
+QuerySet uses the LuwCreate/LuwCommit/LuwRollback to mark the records as a part of the LUW. The changes will affect the data abse, but in case of needed can be rolled back. Succesfull result shoudl realease the locks via LuwCommit. 
+
+Both luw and lock indicators are added to the record, engine allows to modify the records only with the provided lock id. And LUW oepration is saving previous state of the records and colelcts the new and deleted records to rollback everything in case of "LuwRollback" command. The changes in LUW go as normal udpate/modify/delete/create transactions applied directly to the records, but can be reversed.
+
+Lock concept is quite simpel here , __lock__ in record is checked against the parameter passed to modify the record and modification will be not allowed if they are not equal. After releasing the lock all modifications are allowed again.
 
 
 [to be documented]
