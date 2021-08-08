@@ -131,7 +131,7 @@ with jtdb.JTDB() as db:
         item.name = "Salomon"
         item.Save()
 
-    res = db.Query(jtdb.JTDB_AND( City__EQ = "London")).PrintRecords()
+    db.Query(jtdb.JTDB_AND( City__EQ = "London")).PrintRecords()
 
     print("\n\n")
     print("Adding a new element")
