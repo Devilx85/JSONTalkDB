@@ -17,11 +17,13 @@ Main class is jtdb.JTDB():
 
 1. Use "WITH" statement to keep DB file not locked in caasde of cruches or unexpected exits. Whenever daabase file is open , ".lck" file is created to notify other users that the data now is used.
 
-import jtdb
 
-"""Create DataBase object"""
-with jtdb.JTDB() as db:
-    ....
+    import jtdb
+
+    """Create DataBase object"""
+    with jtdb.JTDB() as db:
+        ....
+
 
 2. Create/Load and Save DB are simple methods with filename argument:
     
@@ -29,7 +31,7 @@ with jtdb.JTDB() as db:
 
 3. Method ADD creates an entry in the database assigning the index "__idx__"
 
-    db.AddRecord({ "name" : "John", "age" : 15 , "good" : True , "City" : "London"})
+db.AddRecord({ "name" : "John", "age" : 15 , "good" : True , "City" : "London"})
     db.AddRecord({ "name" : "Paul", "age" : 30 , "good" : True , "City" : "NY", "hobby" : ["music","food"]})
     db.AddRecord({ "name" : "Tony", "age" : 45 , "good" : False , "City" : "Paris"})
     db.AddRecord({ "name" : "Paul", "age" : 55 , "good" : True , "byear" : 1976, "contacts" : { "tel" : "+765556999" , "email" : "paul@Gmail.com"} })
@@ -40,17 +42,17 @@ The classes use arguments as selection filters using following syntax:
 <field>__<COND> or <field>__<sub-field>__....<COND> = <value>
 
 The list of supported conditions:
-EQ - field is equal the parameter 
-NE - field is NOT equal the parameter 
-GT - field is greater as the parameter 
-GE - greater or equal 
-LT - less
-LE - fless or equal
-CO - contains (works as standard python "in" operator)
-RE - search for the regex
-NC - does not contain 
-HS - field has attribute
-NH - foes nto have attribute
+* EQ - field is equal the parameter 
+* NE - field is NOT equal the parameter 
+* GT - field is greater as the parameter 
+* GE - greater or equal 
+* LT - less
+* LE - fless or equal
+* CO - contains (works as standard python "in" operator)
+* RE - search for the regex
+* NC - does not contain 
+* HS - field has attribute
+* NH - does not have attribute
 
 
     print("Search for the person with hobby = nusic")
