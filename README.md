@@ -148,6 +148,21 @@ Lock concept is quite simpel here , __lock__ in record is checked against the pa
 
 [to be documented]
 
+FAQ:
+
+```
+Importing data from JSON:
+
+import jtdb
+import json
+
+"""Create DataBase object"""
+with jtdb.JTDB() as db:
+    db.CreateDB("my_db2")
+    with open("generated.json","r") as f:
+        db.Import(json.load(f))
+    db.SaveDB()
+```
 
 Do not forget to close and save your DB:
 
@@ -157,5 +172,7 @@ Do not forget to close and save your DB:
     """Remove lock file"""
     db.Close()
 ```
+
+
 
 More examples in demo1.py

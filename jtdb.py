@@ -117,12 +117,17 @@ class JTDB_OR(JTDBQuery):
 """Index class"""
 class JTDBIndex():
 
-    def __init__(self,db, name, keys , ix_type):
+    def __init__(self,db, name, keys , ix_type, tpointer = None):
         self.db_link = db
-        self.index = []
+        if tpointer == None:
+            self.index = []
+        else:
+            self.index = tpointer
         self.name = name
         self.keys = keys
         self.ix_type = ix_type
+
+
 
     def Build(self):
         
@@ -138,6 +143,14 @@ class JTDBIndex():
                 lst.append({"hash" : l_hash,"idx":record["__idx__"]})
             
             self.index =  sorted(lst, key=lambda k: k['hash']) 
+
+        data_idx = {}
+        data_idx["type"] = 0
+        data_idx["name"] = self.name
+        data_idx["keys"] = self.keys
+        data_idx["htable"] = self.index
+        print(data_idx)
+        return data_idx
 
 
     def Search(self,vals):
@@ -468,6 +481,7 @@ class JTDB:
         self.withlock = False
         self.LockObj = JTDBLock()
         self.th_lock = threading.Lock()
+        self.upd_cache = []
 
     def IsInit(self):
         if not self.data:
@@ -483,14 +497,21 @@ class JTDB:
         
         return idx_obj.Search(vals)
         
+    def LoadSIndex(self,idx):
+        self.IsInit()
+        idx = JTDBIndex(self,idx["name"],idx["keys"],idx["type"], idx["htable"]) # 0 - hashed / 
+        self.indexes.append(idx)
 
     def AddSIndex(self,name,keys):
         self.IsInit()
+        idx_obj = next((item for item in self.indexes if item.name == name), None)
+        if idx_obj != None:
+            raise JTDBIndexError
 
         idx = JTDBIndex(self,name,keys,0) # 0 - hashed / 
-        idx.Build()
+        self.data["JTDBIndex"].append(idx.Build())
         self.indexes.append(idx)
-    
+        
     def GetIndexedData(self,keysin):
         k_found = 0
         idx_found = None
@@ -510,7 +531,7 @@ class JTDB:
             vlist = []
             for k in idx_found.keys:
                 vlist.append(keysin[k])
-            return self.SearchByIndex(idx_found.name,vlist).data
+            return self.SearchByIndex(idx_found.name,vlist).GetData()
         
         return None
 
@@ -557,7 +578,8 @@ class JTDB:
             self.withlock = False
 
     def LoadDB(self,fname,withlock = True):
-        with open(fname, 'r') as f:
+
+        with open(fname, 'r',encoding='utf-8') as f:
             self.data = json.load(f)
             if "JTDBInfo" not in self.data:
                 raise JTDBWrongFile
@@ -565,6 +587,10 @@ class JTDB:
                 raise JTDBWrongFile
             if "index" not in self.data["JTDBInfo"]:
                 raise JTDBIndexError
+            if "JTDBIndex" not in self.data:
+                self.data["JTDBIndex"] = []
+            for idx in self.data["JTDBIndex"]:
+                self.LoadSIndex(idx)
             if self.data["JTDBInfo"]["index"] < len(self.data["JTDBData"]):
                 raise JTDBIndexError
             self.fname = fname
@@ -579,9 +605,12 @@ class JTDB:
 
     def CreateDB(self,fname):
         self.fname = fname
-        self.data = { "JTDBInfo" : {
+        self.data = { 
+                "JTDBIndex" : [],
+                "JTDBInfo" : {
                 "version" : "1.0",
                 "name" : fname,
+                "idx_tables" : [],
                 "index" : 0
                 },
                 "JTDBData" : [ ]
@@ -644,31 +673,32 @@ class JTDB:
         # ["EQ" 0 ,"GT" 1,"LE" 2,"NE" 3,"GE" 4,"LT" 5,"CO" 6,"IN" 7,"RE" 8,"HS" 9, "NH" 10,"NC" 11]
         if operation == 0:
             return data1 == data2
-        if operation == 3:
+        elif operation == 3:
             return data1 != data2
-        if operation == 1:
+        elif operation == 1:
             return data1 > data2
-        if operation == 4:
+        elif operation == 4:
             return data1 >= data2
-        if operation == 5:
+        elif operation == 5:
             return data1 < data2
-        if operation == 2:
+        elif operation == 2:
             return data1 <= data2
-        if operation == 6:
+        elif operation == 6:
             return data2 in data1
-        if operation == 11:
+        elif operation == 11:
             return  not data2 in data1
-        if operation == 8:
+        elif operation == 8:
             if re.search(data2,data1):
                 return True
             else:
                 return False
-        if operation == 7:
+        elif operation == 7:
             for v in data2:
                 if data1 == v:
                     return True
             return False
 
+        raise JTDBIncorrectQuery
 
     def Filter(self,**kwargs):
 
@@ -766,7 +796,9 @@ class JTDB:
         for param in QObj.parameters:
             keys = param["f"]
             comp = param["c"]
-            if comp == 0 and  keys[0] not in ixs:
+            if len(keys) != 1:
+                continue
+            if comp == 0 and keys[0] not in ixs:
                 ixs[keys[0]] = param["v"]
             elif comp == -1:
                 self.GetIndexedSearch(param["v"],ixs)
@@ -785,7 +817,6 @@ class JTDB:
             ix_flds = {}
             self.GetIndexedSearch(QObj,ix_flds)
             ixs_data = self.GetIndexedData(ix_flds)
-
             if ixs_data != None:
                 data_loop = ixs_data
 
