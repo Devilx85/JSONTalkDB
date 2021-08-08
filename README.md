@@ -1,4 +1,4 @@
-JSONTalk DB 
+# JSONTalk DB 
 
 JSONTalk is a tiny JSON database tool written in Python. It allows to create, save amd modiy data strucutres fast and easy, 
 using a file as storage. The data can be dumped (saved) in a textual form in json format after modifications. It is convinient
@@ -17,13 +17,13 @@ Main class is jtdb.JTDB():
 
 1. Use "WITH" statement to keep DB file not locked in caasde of cruches or unexpected exits. Whenever daabase file is open , ".lck" file is created to notify other users that the data now is used.
 
+```
+import jtdb
 
-    import jtdb
-
-    """Create DataBase object"""
-    with jtdb.JTDB() as db:
-        ....
-
+"""Create DataBase object"""
+with jtdb.JTDB() as db:
+    ....
+```
 
 2. Create/Load and Save DB are simple methods with filename argument:
     
@@ -31,11 +31,13 @@ Main class is jtdb.JTDB():
 
 3. Method ADD creates an entry in the database assigning the index "__idx__"
 
-db.AddRecord({ "name" : "John", "age" : 15 , "good" : True , "City" : "London"})
+```
+    db.AddRecord({ "name" : "John", "age" : 15 , "good" : True , "City" : "London"})
     db.AddRecord({ "name" : "Paul", "age" : 30 , "good" : True , "City" : "NY", "hobby" : ["music","food"]})
     db.AddRecord({ "name" : "Tony", "age" : 45 , "good" : False , "City" : "Paris"})
     db.AddRecord({ "name" : "Paul", "age" : 55 , "good" : True , "byear" : 1976, "contacts" : { "tel" : "+765556999" , "email" : "paul@Gmail.com"} })
     db.AddRecord({ "name" : "Parisman", "age" : 24 , "City" : "Paris"})
+```
 
 4. Method Query to select the data. As parameter is accepts JTDB_AND & JTDB_OR class to form the conditions for the selection
 The classes use arguments as selection filters using following syntax:
@@ -54,15 +56,18 @@ The list of supported conditions:
 * HS - field has attribute
 * NH - does not have attribute
 
-
+```
     print("Search for the person with hobby = nusic")
     db.Query(jtdb.JTDB_AND(hobby__CO = "music")).PrintRecords()
     print("Deep search for the phone in the contacts:")
     db.Query(jtdb.JTDB_AND(contacts__tel__EQ = "+777889999")).PrintRecords()
+```
 
 As well functions can be passed intead of values. where the current record parameter will be passed:
-    
+
+```
     db.Query(jtdb.JTDB_OR( name__EQ = lambda x:  x["City"] + "man" if "City" in x  else "" )).PrintRecords()
+```
 
 The Result provided is a instance of the class JTDBQuerySet
 
@@ -76,20 +81,26 @@ it has several valuable methods to work with the result data set:
 * Aggregate - to sum up/count hte recieved values (just in case =) )
 and further methods....
 
+```
     print("Update contacts adding the birth year via lambda function where there is no byear element")
     db.Query(jtdb.JTDB_AND( City__EQ = "London")).ModifyItems(Land = "GB").PrintRecords()
+```
 
 Modify and Udpate uses as well field names as parameters , additionally you can use builtin functions ADD, SUB ,DIV ,and MUL
 they allow to update the data adding (dividing etc) argument to inital field value
 
+```
     db.Query(jtdb.JTDB_AND( City__EQ = "London")).ModifyItems(age__ADD = 5).PrintRecords()   
+```
 
 or just use function:
+```    
     db.Query(jtdb.JTDB_AND( byear__NH = None)).ModifyItems(byear = lambda x: 2021 - x["age"]).PrintRecords()
-
+```
 
 5. JTDBObject is used to have easy interface with each record:
 
+```
     print("Iterate by object")
     res = db.Query(jtdb.JTDB_AND( City__EQ = "London"))
     for item in res.ObjList():
@@ -113,10 +124,11 @@ or just use function:
     print("New person is there with ID",person.MyId())
     
     db.Query(jtdb.JTDB_AND( name__EQ = "Helen")).PrintRecords()
-
+```
 
 6. Indexes are experemental and are hashing the fields  so that binary search then used via search rather than loop:
 
+```
     print("Build index and search by index:")
     db.AddSIndex("age_and_city",["age","City"])
     db.AddSIndex("byear",["byear"])
@@ -124,6 +136,7 @@ or just use function:
     print("Search for the birth year Index:")
     res = db.SearchByIndex("byear",[ 1990 ])
     res.PrintRecords()
+```
 
 7. LUWs are used with commits and rollbacks. The idea behind is to save temporary previous state and restore in case of problem
 
@@ -133,9 +146,11 @@ or just use function:
 
 Do not forget to close and save your DB:
 
+```
     """Save to file"""
     db.SaveDB()
     """Remove lock file"""
     db.Close()
+```
 
 More examples in demo1.py
